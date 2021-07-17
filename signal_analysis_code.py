@@ -90,7 +90,7 @@ p     = 15 # poles for random interpolation
 pulse_max_duration = 50 # us
 indexes = np.random.permutation(np.arange(int(n/2),int(n/2) + pulse_max_duration/dt))
 
-n_el = 2 #number of electrons
+n_el = 10 #number of electrons
 gain = 100 #average gain
 fano = 0.25 # a value close to argon
 sigmaF = np.sqrt(fano*gain)# sigma avec Fano sigma = sqrt(fano*mean)
