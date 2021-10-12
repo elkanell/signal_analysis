@@ -81,10 +81,11 @@ fano = 0.25 # a value close to argon
 sigmaF = np.sqrt(fano*gain)# sigma avec Fano sigma = sqrt(fano*mean)
 gains = np.round(np.random.normal(gain, sigmaF, n_el))
 #indexes = indexes[:n_el]
-a = 5 #the distance of the two pulses
+a = 10 #the distance of the two pulses
  
 s1 = np.zeros(n)
 s2 = np.zeros(n)
+raw_pulse = np.zeros(n)
 
 for num in range (0, 2):
 	index = 2000
@@ -106,6 +107,7 @@ for num in range (0, 2):
 plt.figure(1)
 plt.plot(time, s1, s2)
 
+
 # %%
 len_preamp_response = int(n/2)
 preamp_fall_time = 125
@@ -118,6 +120,31 @@ pulse_1 = np.delete(pulse_1, range(4000, 5000), axis=0)
 raw_pulse_temp_2 = np.concatenate( (np.zeros(1000), s2), axis=0 )
 pulse_2 =  scipy.signal.fftconvolve(raw_pulse_temp_2, preamp_response, "same")
 pulse_2 = np.delete(pulse_2, range(4000, 5000), axis=0)
+
+plt.figure(2)
+plt.plot(time, s1, s2)
+plt.plot(time, pulse_1, pulse_2)
+
+#white noise
+noiseamp = 20
+
+ampl = np.zeros(n) + np.linspace(50, -50, n) - 10000
+noise = noiseamp * np.random.randn(n)
+signal_1 = pulse_1 + ampl + noise
+signal_2 = pulse_2 + ampl +noise
+
+noisepnts = [int(n/4), int(n/2)]
+signal_1[noisepnts] += 200 + np.random.randn(len(noisepnts)) * 100
+signal_2[noisepnts] += 200 + np.random.randn(len(noisepnts)) * 100
+
+plt.figure(3)
+plt.plot(time, signal_1, signal_2)
+
+plt.figure(31)
+plt.plot(time, signal_1)
+
+plt.figure(32)
+plt.plot(time, signal_2)
 
 # %%
 """Read pulse output from samba and process them.
