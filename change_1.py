@@ -33,6 +33,8 @@ plt.rcParams['axes.labelsize'] = 16
 plt.rcParams['axes.titlesize'] = 16
 
 #%%
+
+# definition of the functions: ion current and induced current
 def ion_current(time, r_a = 0.1, r_c = 15, voltage = 2000, pressure = 1, mobility_0 = 2.e-6):
     """ J.Derre derivation of the formula
         distance [cm]
@@ -61,7 +63,6 @@ def induced_current(t, d, z, ve, vi):
 		return -q
 
 
-
 # %%
 srate = 1e+6 # MHz
 duration = 4e+3 #usec
@@ -81,8 +82,9 @@ fano = 0.25 # a value close to argon
 sigmaF = np.sqrt(fano*gain)# sigma avec Fano sigma = sqrt(fano*mean)
 gains = np.round(np.random.normal(gain, sigmaF, n_el))
 #indexes = indexes[:n_el]
-a = 10 #the distance of the two pulses
+a = 100 #the distance of the two pulses
  
+# create two pulses for the two electrons in a distance a  
 s1 = np.zeros(n)
 s2 = np.zeros(n)
 raw_pulse = np.zeros(n)
@@ -104,15 +106,22 @@ for num in range (0, 2):
 		pulse_temp2 = np.concatenate( (zeros_part, ic2), axis=0) 
 		s2 = s2 + pulse_temp2 
 
-plt.figure(1)
-plt.plot(time, s1, s2)
+# the two pulses in one array
+raw_pulse = s1 + s2
 
+plt.figure(1)
+plt.plot(time, raw_pulse)
+plt.title('The two pulses in a distance a')
 
 # %%
+
+# preamplifier response
 len_preamp_response = int(n/2)
 preamp_fall_time = 125
 preamp_response = np.exp(- dt * np.arange( len_preamp_response ) / preamp_fall_time)
 
+# convoluted pulse with the preamplifier response 
+# electronic signal
 raw_pulse_temp_1 = np.concatenate( (np.zeros(1000), s1), axis=0 )
 pulse_1 =  scipy.signal.fftconvolve(raw_pulse_temp_1, preamp_response, "same")
 pulse_1 = np.delete(pulse_1, range(4000, 5000), axis=0)
@@ -121,30 +130,59 @@ raw_pulse_temp_2 = np.concatenate( (np.zeros(1000), s2), axis=0 )
 pulse_2 =  scipy.signal.fftconvolve(raw_pulse_temp_2, preamp_response, "same")
 pulse_2 = np.delete(pulse_2, range(4000, 5000), axis=0)
 
-plt.figure(2)
-plt.plot(time, s1, s2)
-plt.plot(time, pulse_1, pulse_2)
+#plt.figure(2)
+#plt.plot(time, s1, s2)
+#plt.plot(time, pulse_1, pulse_2)
+
+raw_pulse_temp = np.concatenate( (np.zeros(1000), raw_pulse), axis=0 )
+pulse =  scipy.signal.fftconvolve(raw_pulse_temp, preamp_response, "same")
+pulse = np.delete(pulse, range(4000, 5000), axis=0)
+
+plt.figure(21)
+plt.plot(time, raw_pulse)
+plt.plot(time, pulse)
+plt.title('The electronic signal of the two electrons')
 
 #white noise
-noiseamp = 20
+noiseamp = 2
 
-ampl = np.zeros(n) + np.linspace(50, -50, n) - 10000
+# add a white noise to the signal
+
+#ampl = np.zeros(n) + np.linspace(50, -50, n) - 10000
 noise = noiseamp * np.random.randn(n)
-signal_1 = pulse_1 + ampl + noise
-signal_2 = pulse_2 + ampl +noise
+signal_1 = pulse_1 + noise #+ ampl 
+signal_2 = pulse_2 + noise #+ ampl 
 
-noisepnts = [int(n/4), int(n/2)]
-signal_1[noisepnts] += 200 + np.random.randn(len(noisepnts)) * 100
-signal_2[noisepnts] += 200 + np.random.randn(len(noisepnts)) * 100
+signal = pulse + noise
+
+#noisepnts = [int(n/4), int(n/2)]
+#signal_1[noisepnts] += 200 + np.random.randn(len(noisepnts)) * 100
+#signal_2[noisepnts] += 200 + np.random.randn(len(noisepnts)) * 100
 
 plt.figure(3)
-plt.plot(time, signal_1, signal_2)
+plt.plot(time, signal)
+plt.title('The electronic signal with noise')
 
-plt.figure(31)
-plt.plot(time, signal_1)
+#plt.figure(31)
+#plt.plot(time, signal_1)
 
-plt.figure(32)
-plt.plot(time, signal_2)
+#plt.figure(32)
+#plt.plot(time, signal_2, c = 'y')
+
+#preamp_response = np.array(preamp_response)
+
+# deconvoluted signal with noise and preamplifier response
+
+signal_temp = np.concatenate((np.zeros(1000), signal), axis = 0)
+signal_noise, residual = scipy.signal.deconvolve(signal_temp, preamp_response)
+time = np.delete(time, range(3001, 4000), axis = 0)
+raw_pulse = np.delete(raw_pulse, range(3001, 4000), axis = 0)
+
+plt.figure(4)
+plt.plot(time, signal_noise)
+plt.plot(time, raw_pulse)
+plt.title('The pulse of the two electrons with noise')
+#plt.plot(time, raw_pulse)
 
 # %%
 """Read pulse output from samba and process them.
