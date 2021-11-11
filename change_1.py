@@ -82,7 +82,7 @@ fano = 0.25 # a value close to argon
 sigmaF = np.sqrt(fano*gain)# sigma avec Fano sigma = sqrt(fano*mean)
 gains = np.round(np.random.normal(gain, sigmaF, n_el))
 #indexes = indexes[:n_el]
-a = 100 #the distance of the two pulses
+a = 1000 #the distance of the two pulses
  
 # create two pulses for the two electrons in a distance a  
 s1 = np.zeros(n)
@@ -113,8 +113,27 @@ plt.figure(1)
 plt.plot(time, raw_pulse)
 plt.title('The two pulses in a distance a')
 
-# %%
+# preamplifier response
+#len_preamp_response = int(n/2)
+#preamp_fall_time = 125
+#preamp_response = np.exp(- dt * np.arange( len_preamp_response ) / preamp_fall_time)
 
+#pulse= scipy.signal.convolve(raw_pulse, preamp_response, mode = "same")
+#plt.figure(11)
+#plt.plot(time, pulse)
+
+#deconv, _ = scipy.signal.deconvolve(pulse, preamp_response)
+
+#length = len(pulse)
+#pulse_padded = np.zeros( length + len(preamp_response) - 1 )
+#pulse_padded[:length] = pulse
+
+#deconv, _ = scipy.signal.deconvolve(pulse_padded, preamp_response)
+
+#plt.figure(12)
+#plt.plot(time, deconv)
+
+# %%
 # preamplifier response
 len_preamp_response = int(n/2)
 preamp_fall_time = 125
@@ -143,6 +162,16 @@ plt.plot(time, raw_pulse)
 plt.plot(time, pulse)
 plt.title('The electronic signal of the two electrons')
 
+length = len(pulse)
+pulse_padded = np.zeros( length + len(preamp_response) - 1 )
+pulse_padded[:length] = pulse
+
+deconv, _ = scipy.signal.deconvolve(pulse_padded, preamp_response)
+
+plt.figure(3)
+plt.plot(time, deconv)
+plt.title('The two pulses in a distance a after deconvolution')
+
 #white noise
 noiseamp = 2
 
@@ -159,7 +188,7 @@ signal = pulse + noise
 #signal_1[noisepnts] += 200 + np.random.randn(len(noisepnts)) * 100
 #signal_2[noisepnts] += 200 + np.random.randn(len(noisepnts)) * 100
 
-plt.figure(3)
+plt.figure(4)
 plt.plot(time, signal)
 plt.title('The electronic signal with noise')
 
@@ -171,18 +200,19 @@ plt.title('The electronic signal with noise')
 
 #preamp_response = np.array(preamp_response)
 
+# %%
 # deconvoluted signal with noise and preamplifier response
+length = len(signal)
+signal_padded = np.zeros( length + len(preamp_response) - 1 )
+signal_padded[:length] = signal
 
-signal_temp = np.concatenate((np.zeros(1000), signal), axis = 0)
-signal_noise, residual = scipy.signal.deconvolve(signal_temp, preamp_response)
-time = np.delete(time, range(3001, 4000), axis = 0)
-raw_pulse = np.delete(raw_pulse, range(3001, 4000), axis = 0)
+deconv, _ = scipy.signal.deconvolve(signal_padded, preamp_response)
 
-plt.figure(4)
-plt.plot(time, signal_noise)
-plt.plot(time, raw_pulse)
+
+plt.figure(5)
+plt.plot(time, deconv)
 plt.title('The pulse of the two electrons with noise')
-#plt.plot(time, raw_pulse)
+
 
 # %%
 """Read pulse output from samba and process them.
