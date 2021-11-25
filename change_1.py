@@ -113,31 +113,12 @@ plt.figure(1)
 plt.plot(time, raw_pulse)
 plt.title('The two pulses in a distance a')
 
-# preamplifier response
-#len_preamp_response = int(n/2)
-#preamp_fall_time = 125
-#preamp_response = np.exp(- dt * np.arange( len_preamp_response ) / preamp_fall_time)
-
-#pulse= scipy.signal.convolve(raw_pulse, preamp_response, mode = "same")
-#plt.figure(11)
-#plt.plot(time, pulse)
-
-#deconv, _ = scipy.signal.deconvolve(pulse, preamp_response)
-
-#length = len(pulse)
-#pulse_padded = np.zeros( length + len(preamp_response) - 1 )
-#pulse_padded[:length] = pulse
-
-#deconv, _ = scipy.signal.deconvolve(pulse_padded, preamp_response)
-
-#plt.figure(12)
-#plt.plot(time, deconv)
-
 # %%
 # preamplifier response
 len_preamp_response = int(n/2)
 preamp_fall_time = 125
 preamp_response = np.exp(- dt * np.arange( len_preamp_response ) / preamp_fall_time)
+
 
 # convoluted pulse with the preamplifier response 
 # electronic signal
@@ -157,8 +138,8 @@ raw_pulse_temp = np.concatenate( (np.zeros(1000), raw_pulse), axis=0 )
 pulse =  scipy.signal.fftconvolve(raw_pulse_temp, preamp_response, "same")
 pulse = np.delete(pulse, range(4000, 5000), axis=0)
 
-plt.figure(21)
-plt.plot(time, raw_pulse)
+plt.figure(2)
+#plt.plot(time, raw_pulse)
 plt.plot(time, pulse)
 plt.title('The electronic signal of the two electrons')
 
@@ -213,6 +194,40 @@ plt.figure(5)
 plt.plot(time, deconv)
 plt.title('The pulse of the two electrons with noise')
 
+# %% 
+#ion deconvolution
+ion_resp = ion_current(dt*np.arange(len_preamp_response), r_a = 0.1, r_c = 15, voltage = 2000, pressure = 1, mobility_0 = 2.e-6)
+
+length = len(raw_pulse)
+pulse_padded = np.zeros(length + len(ion_resp) - 1)
+pulse_padded[:length] = raw_pulse
+
+electron_signal, residual = scipy.signal.deconvolve(pulse_padded, ion_resp)
+
+plt.figure(6)
+plt.plot(time, electron_signal)
+plt.title('The deconvolution of the ion response and the raw pulse')
+
+#heights for the normalization
+raw_pulse_height = array( 'f', [0])
+electron_signal_height = array( 'f', [0])
+
+electron_signal_height_position = np.argmax(electron_signal)
+electron_signal_height[0] = electron_signal[electron_signal_height_position] 
+
+raw_pulse_height_position = np.argmax(raw_pulse)
+raw_pulse_height[0] = raw_pulse[raw_pulse_height_position] 
+
+
+#normalized electron signal and raw pulse
+electron_signal_norm = electron_signal / (electron_signal_height[0])
+raw_pulse_norm = raw_pulse / (raw_pulse_height[0])
+
+plt.figure(7)
+plt.plot(time, electron_signal_norm, label = "electron signal")
+plt.plot(time, raw_pulse_norm, label = "raw pulse")
+plt.title('The electron signal and the raw pulse (normalized)')
+plt.legend()
 
 # %%
 """Read pulse output from samba and process them.
@@ -408,4 +423,5 @@ df = pd.DataFrame(
      {"pulse": [1, 2], "height": [round(pulse_height_1[0], 2), round(pulse_height_2[0], 2)], "risetime [usec]": [round(risetime_1[0], 2), round(risetime_2[0], 2)], "width [usec]": [round(width_1[0], 2), round(width_2[0], 2)], "integral [ADU*usec]": [round(integral_1[0], 2), round(integral_2[0], 2)]}
 )
 print(df)
+
 # %%
