@@ -6,7 +6,7 @@ Created on Mon Dec  9 16:25:22 2019
 @author: ioanniskatsioulas
 """
 
-#%%
+# %%
 import matplotlib
 import numpy as np
 import matplotlib.pyplot as plt
@@ -18,7 +18,7 @@ import struct
 import numpy as np
 import matplotlib.pyplot as plt
 
-import scipy.signal
+import scipy.fftpack
 
 from array import array
 
@@ -32,7 +32,6 @@ interactive(True)
 plt.rcParams['axes.labelsize'] = 16
 plt.rcParams['axes.titlesize'] = 16
 
-#%%
 
 # definition of the functions: ion current and induced current
 def ion_current(time, r_a = 0.1, r_c = 15, voltage = 2000, pressure = 1, mobility_0 = 2.e-6):
@@ -218,16 +217,88 @@ electron_signal_height[0] = electron_signal[electron_signal_height_position]
 raw_pulse_height_position = np.argmax(raw_pulse)
 raw_pulse_height[0] = raw_pulse[raw_pulse_height_position] 
 
-
 #normalized electron signal and raw pulse
 electron_signal_norm = electron_signal / (electron_signal_height[0])
 raw_pulse_norm = raw_pulse / (raw_pulse_height[0])
 
+#integ_1 = array ('f', [0])
+#integ_2 = array ('f', [0])
+
+#integ_1[0] = np.trapz(raw_pulse, dx = dt)
+#integ_2[0] = np.trapz(electron_signal, dx = dt)
+
+#electron_signal_norm = electron_signal / (integ_2[0])
+#raw_pulse_norm = raw_pulse / (integ_1[0])
+
 plt.figure(7)
-plt.plot(time, electron_signal_norm, label = "electron signal")
+plt.plot(time, electron_signal_norm, label = "deconvolution")
 plt.plot(time, raw_pulse_norm, label = "raw pulse")
-plt.title('The electron signal and the raw pulse (normalized)')
+plt.title('The deconvolution and the raw pulse (normalized)')
 plt.legend()
+
+# %%
+
+#Fourier spectra of signal
+
+from scipy.fft import fft, fftfreq
+
+signal_length = len(pulse)
+sample_rate = srate
+dt = 1e+6/sample_rate
+
+df = 1/signal_length
+
+plt.figure(37)
+plt.plot(time, pulse)
+
+f = fft(pulse)
+
+n_t = len(time)
+
+freqs = df*scipy.arange(0, (n_t - 1)/2., dtype = 'd')
+n_freq = len(freqs)
+
+plt.figure(38)
+plt.plot(freqs, f[0:n_freq])
+#plt.xlim([0, 0.1])
+
+#2nd try
+#nSign = len(signal)
+#signal_Fourier = scipy.fftpack.fft(signal, nSign)
+#freq = scipy.fftpack.fftfreq(nSign, d=1/srate)
+
+#plt.figure(8)
+#plt.plot(freq, signal_Fourier)
+
+#nNoise = len(noise)
+#noise_Fourier = scipy.fftpack.fft(noise, nNoise)
+
+#plt.figure(9)
+#plt.plot(noise_Fourier)
+
+#3rd try
+#yf = fft(signal)
+#xf = fftfreq(n, 1/srate)
+
+#plt.plot(xf, yf)
+#plt.show()
+
+#ax1 = plt.subplot(222)
+#ax1.margins(x=2, y=-0.1)
+#ax1.plot(xf, np.abs(yf))
+
+
+#yf = fft(raw_pulse)
+#xf = fftfreq(n, 1/srate)
+
+#plt.plot(xf, np.abs(yf))
+#plt.show()
+
+#yf = fft(pulse)
+#xf = fftfreq(n, 1/srate)
+
+#plt.plot(xf, np.abs(yf))
+#plt.show()
 
 # %%
 """Read pulse output from samba and process them.
