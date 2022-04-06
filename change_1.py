@@ -243,7 +243,7 @@ plt.legend()
 from scipy.fft import fft, fftfreq
 
 signal_length = len(pulse)
-sample_rate = srate
+sample_rate = 1e+6
 dt = 1e+6/sample_rate
 
 df = 1/signal_length
@@ -260,45 +260,72 @@ n_freq = len(freqs)
 
 plt.figure(38)
 plt.plot(freqs, f[0:n_freq])
-#plt.xlim([0, 0.1])
+plt.xlim([0, 0.1])
 
-#2nd try
-#nSign = len(signal)
-#signal_Fourier = scipy.fftpack.fft(signal, nSign)
-#freq = scipy.fftpack.fftfreq(nSign, d=1/srate)
+"""2nd try
+sample_rate = 1e+6
 
-#plt.figure(8)
-#plt.plot(freq, signal_Fourier)
+def DFT(x):
+	N = len(x)
+	n = np.arange(N)
+	k = n.reshape((N, 1))
+	e = np.exp(-2j *np.pi * k * n / N)
+	
+	X = np.dot(e, x)
 
-#nNoise = len(noise)
-#noise_Fourier = scipy.fftpack.fft(noise, nNoise)
+	return x
 
-#plt.figure(9)
-#plt.plot(noise_Fourier)
+X = DFT(raw_pulse)
 
-#3rd try
-#yf = fft(signal)
-#xf = fftfreq(n, 1/srate)
+N = len(X)
+n = np.arange(N)
+T = N/sample_rate
+freq = n/T
 
-#plt.plot(xf, yf)
-#plt.show()
+plt.figure(figsize = (8, 6))
+plt.stem(freq, abs(X), 'b', \
+         markerfmt=" ", basefmt="-b")
+plt.xlabel('Freq (Hz)')
+plt.ylabel('DFT Amplitude |X(freq)|')
+plt.show()
 
-#ax1 = plt.subplot(222)
-#ax1.margins(x=2, y=-0.1)
-#ax1.plot(xf, np.abs(yf))
+3rd try
+nSign = len(signal)
+signal_Fourier = scipy.fftpack.fft(signal, nSign)
+freq = scipy.fftpack.fftfreq(nSign, d=1/srate)
+
+plt.figure(8)
+plt.plot(freq, signal_Fourier)
+
+nNoise = len(noise)
+noise_Fourier = scipy.fftpack.fft(noise, nNoise)
+
+plt.figure(9)
+plt.plot(noise_Fourier)
+
+4th try
+yf = fft(signal)
+xf = fftfreq(n, 1/srate)
+
+plt.plot(xf, yf)
+plt.show()
+
+ax1 = plt.subplot(222)
+ax1.margins(x=2, y=-0.1)
+ax1.plot(xf, np.abs(yf))
 
 
-#yf = fft(raw_pulse)
-#xf = fftfreq(n, 1/srate)
+yf = fft(raw_pulse)
+xf = fftfreq(n, 1/srate)
 
-#plt.plot(xf, np.abs(yf))
-#plt.show()
+plt.plot(xf, np.abs(yf))
+plt.show()
 
-#yf = fft(pulse)
-#xf = fftfreq(n, 1/srate)
+yf = fft(pulse)
+xf = fftfreq(n, 1/srate)
 
-#plt.plot(xf, np.abs(yf))
-#plt.show()
+plt.plot(xf, np.abs(yf))
+plt.show() """
 
 # %%
 """Read pulse output from samba and process them.
@@ -495,4 +522,173 @@ df = pd.DataFrame(
 )
 print(df)
 
+
+# %%
+#3 electrons with Monte Carlo
+import matplotlib
+import numpy as np
+import matplotlib.pyplot as plt
+import scipy.signal
+import copy
+import ctypes
+
+import struct
+import numpy as np
+import matplotlib.pyplot as plt
+
+import scipy.fftpack
+
+from array import array
+
+from datetime import datetime
+
+import pandas as pd
+
+from matplotlib import interactive
+interactive(True)
+
+import random
+
+plt.rcParams['axes.labelsize'] = 16
+plt.rcParams['axes.titlesize'] = 16
+
+
+# definition of the functions: ion current and induced current
+def ion_current(time, r_a = 0.1, r_c = 15, voltage = 2000, pressure = 1, mobility_0 = 2.e-6):
+    """ J.Derre derivation of the formula
+        distance [cm]
+        pressure [bar]
+        time [usec]
+        voltage [V]
+    """
+    rho = (r_c * r_a) / (r_c - r_a)
+    alpha = ( 2.e-6 ) * voltage * rho / pressure # constant that depends on the gas and the anode radius
+
+    # return rho * ( 1 / r_a - 1 / (r_a**3 + 3 * alpha * time)**(1/3) )
+    return alpha * rho * (r_a**3 + 3 * alpha * time)**(-4/3)
+
+def induced_current(t, d, z, ve, vi):
+	#Units used cm, us, fC
+	q = 1.6E-4 #fC
+	
+	tel_max = d-z / ve
+	ti_max = z/vi
+	
+	if t < tel_max:
+		return -q*t*(ve+vi)/d
+	elif d-z / ve < t < ti_max:
+		return -q*(d-z+vi*t)/d
+	else: 
+		return -q
+
+srate = 1e+6 # MHz
+duration = 4e+3 #usec
+dt = 1e+6 / srate # in us
+time  = np.arange(0, duration, dt) #0 to 1000 us (1 ms)
+n     = len(time)
+p     = 15 # poles for random interpolation
+
+
+# produce simulated pulse without noise
+pulse_max_duration = 50 # us
+#indexes = np.random.permutation(np.arange(int(n/2),int(n/2) + pulse_max_duration/dt))
+
+n_el = 3 #number of electrons
+gain = 100 #average gain
+fano = 0.25 # a value close to argon
+sigmaF = np.sqrt(fano*gain)# sigma avec Fano sigma = sqrt(fano*mean)
+gains = np.round(np.random.normal(gain, sigmaF, n_el))
+#indexes = indexes[:n_el]
+
+#a = random.randint(0, 1000) #the distance of the two pulses
+
+# %%
+for i in range (1):
+	s = np.zeros(n)
+	s1 = np.zeros(n)
+	raw_pulse = np.zeros(n)
+
+	index = 2000
+	zeros_part = np.zeros(int(index))
+	time_temp = np.arange(0, dt*(n-index), dt)
+
+	a = random.randint(0, 1000) #the distance of the two pulses
+
+	num = 0
+
+	while num < 3:
+		if num == 0:
+			ic1 = gains[num] * ion_current(time_temp)
+			pulse_temp1 = np.concatenate( (zeros_part, ic1), axis=0) 
+			s1 = s1 + pulse_temp1 
+			num = num + 1 
+			raw_pulse = s1
+		else:
+			index = index + a
+			zeros_part = np.zeros(int(index))
+			time_temp = np.arange(0, dt*(n-index), dt)
+			ic = gains[num] * ion_current(time_temp) 
+			pulse_temp = np.concatenate( (zeros_part, ic), axis=0) 
+			s = s + pulse_temp
+			num = num + 1
+			raw_pulse = raw_pulse + s
+
+	plt.figure(i)
+	plt.plot(time, raw_pulse)
+	plt.title('The three pulses in a random distance')
+
+# %%
+# preamplifier response
+len_preamp_response = int(n/2)
+preamp_fall_time = 125
+preamp_response = np.exp(- dt * np.arange( len_preamp_response ) / preamp_fall_time)
+
+
+# convoluted pulse with the preamplifier response 
+raw_pulse_temp = np.concatenate( (np.zeros(1000), raw_pulse), axis=0 )
+pulse =  scipy.signal.fftconvolve(raw_pulse_temp, preamp_response, "same")
+pulse = np.delete(pulse, range(4000, 5000), axis=0)
+
+plt.figure(2)
+#plt.plot(time, raw_pulse)
+plt.plot(time, pulse)
+plt.title('The electronic signal of the three electrons')
+
+#white noise
+noiseamp = 2
+
+# add a white noise to the signal
+noise = noiseamp * np.random.randn(n)
+
+signal = pulse + noise
+
+plt.figure(4)
+plt.plot(time, signal)
+plt.title('The electronic signal with noise')
+
+# %%
+# deconvoluted signal with noise and preamplifier response
+length = len(signal)
+signal_padded = np.zeros( length + len(preamp_response) - 1 )
+signal_padded[:length] = signal
+
+deconv, _ = scipy.signal.deconvolve(signal_padded, preamp_response)
+
+
+plt.figure(5)
+plt.plot(time, deconv)
+plt.title('The pulse of the three electrons with noise')
+
+# %%
+#white noise
+noiseamp = 2
+
+# add a white noise to the signal
+noise = noiseamp * np.random.randn(n)
+
+raw_pulse_noise = raw_pulse + noise
+
+plt.figure(4)
+plt.plot(time, raw_pulse_noise)
+plt.title('The raw pulse with noise')
 # %%
