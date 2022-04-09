@@ -549,6 +549,9 @@ interactive(True)
 
 import random
 
+from numpy import savetxt
+from numpy import loadtxt
+
 plt.rcParams['axes.labelsize'] = 16
 plt.rcParams['axes.titlesize'] = 16
 
@@ -600,10 +603,8 @@ sigmaF = np.sqrt(fano*gain)# sigma avec Fano sigma = sqrt(fano*mean)
 gains = np.round(np.random.normal(gain, sigmaF, n_el))
 #indexes = indexes[:n_el]
 
-#a = random.randint(0, 1000) #the distance of the two pulses
-
 # %%
-for i in range (1):
+for i in range (10):
 	s = np.zeros(n)
 	s1 = np.zeros(n)
 	raw_pulse = np.zeros(n)
@@ -612,83 +613,65 @@ for i in range (1):
 	zeros_part = np.zeros(int(index))
 	time_temp = np.arange(0, dt*(n-index), dt)
 
-	a = random.randint(0, 1000) #the distance of the two pulses
+	r = np.random.normal(0.0, 100.0, 3) #the distance of the pulses
+	print(r)
+
+	data = 2000 + r
+	savetxt('data.csv', data, delimiter=',')
 
 	num = 0
 
 	while num < 3:
-		if num == 0:
-			ic1 = gains[num] * ion_current(time_temp)
-			pulse_temp1 = np.concatenate( (zeros_part, ic1), axis=0) 
-			s1 = s1 + pulse_temp1 
-			num = num + 1 
-			raw_pulse = s1
-		else:
-			index = index + a
-			zeros_part = np.zeros(int(index))
-			time_temp = np.arange(0, dt*(n-index), dt)
-			ic = gains[num] * ion_current(time_temp) 
-			pulse_temp = np.concatenate( (zeros_part, ic), axis=0) 
-			s = s + pulse_temp
-			num = num + 1
-			raw_pulse = raw_pulse + s
+		index = index + r[num]
+		zeros_part = np.zeros(int(index))
+		time_temp = np.arange(0, dt*(n-index), dt)
+		ic = gains[num] * ion_current(time_temp)
+		pulse_temp = np.concatenate( (zeros_part, ic), axis=0)
+		s = s + pulse_temp
+		num = num + 1
+		raw_pulse = raw_pulse + s
 
 	plt.figure(i)
 	plt.plot(time, raw_pulse)
 	plt.title('The three pulses in a random distance')
 
-# %%
-# preamplifier response
-len_preamp_response = int(n/2)
-preamp_fall_time = 125
-preamp_response = np.exp(- dt * np.arange( len_preamp_response ) / preamp_fall_time)
+    # preamplifier response
+	len_preamp_response = int(n/2)
+	preamp_fall_time = 125
+	preamp_response = np.exp(- dt * np.arange( len_preamp_response ) / preamp_fall_time)
 
+	# convoluted pulse with the preamplifier response 
+	raw_pulse_temp = np.concatenate( (np.zeros(1000), raw_pulse), axis=0 )
+	pulse =  scipy.signal.fftconvolve(raw_pulse_temp, preamp_response, "same")
+	pulse = np.delete(pulse, range(4000, 5000), axis=0)
 
-# convoluted pulse with the preamplifier response 
-raw_pulse_temp = np.concatenate( (np.zeros(1000), raw_pulse), axis=0 )
-pulse =  scipy.signal.fftconvolve(raw_pulse_temp, preamp_response, "same")
-pulse = np.delete(pulse, range(4000, 5000), axis=0)
+	plt.figure(10+i)
+	#plt.plot(time, raw_pulse)
+	plt.plot(time, pulse)
+	plt.title('The electronic signal of the three electrons')
 
-plt.figure(2)
-#plt.plot(time, raw_pulse)
-plt.plot(time, pulse)
-plt.title('The electronic signal of the three electrons')
+	#white noise
+	noiseamp = 2
 
-#white noise
-noiseamp = 2
+	# add a white noise to the signal
+	noise = noiseamp * np.random.randn(n)
 
-# add a white noise to the signal
-noise = noiseamp * np.random.randn(n)
+	signal = pulse + noise
 
-signal = pulse + noise
+	plt.figure(20+i)
+	plt.plot(time, signal)
+	plt.title('The electronic signal with noise')
 
-plt.figure(4)
-plt.plot(time, signal)
-plt.title('The electronic signal with noise')
+	# deconvoluted signal with noise and preamplifier response
+	length = len(signal)
+	signal_padded = np.zeros( length + len(preamp_response) - 1 )
+	signal_padded[:length] = signal
 
-# %%
-# deconvoluted signal with noise and preamplifier response
-length = len(signal)
-signal_padded = np.zeros( length + len(preamp_response) - 1 )
-signal_padded[:length] = signal
+	deconv, _ = scipy.signal.deconvolve(signal_padded, preamp_response)
 
-deconv, _ = scipy.signal.deconvolve(signal_padded, preamp_response)
-
-
-plt.figure(5)
-plt.plot(time, deconv)
-plt.title('The pulse of the three electrons with noise')
+	plt.figure(30+i)
+	plt.plot(time, deconv)
+	plt.title('The pulse of the three electrons with noise') 
 
 # %%
-#white noise
-noiseamp = 2
 
-# add a white noise to the signal
-noise = noiseamp * np.random.randn(n)
-
-raw_pulse_noise = raw_pulse + noise
-
-plt.figure(4)
-plt.plot(time, raw_pulse_noise)
-plt.title('The raw pulse with noise')
-# %%
