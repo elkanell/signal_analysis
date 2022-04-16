@@ -1,56 +1,15 @@
 
-import matplotlib
-import numpy as np
-import matplotlib.pyplot as plt
 import scipy.signal
-import copy
-import ctypes
-
-import struct
 import numpy as np
-import matplotlib.pyplot as plt
 
 import scipy.fftpack
+from classes import core_instance as InstanceRef
 
-from array import array
-
-from datetime import datetime
-
-import pandas as pd
-
-from matplotlib import interactive
-
-SRATE = 1e+6 # MHz
-duration = 4e+3 #usec
-DT = 1e+6 / SRATE # in us
-# produce simulated pulse without noise
-pulse_max_duration = 50 # us
-#indexes = np.random.permutation(np.arange(int(n/2),int(n/2) + pulse_max_duration/dt))
-n_el = 2 #number of electrons
-gain = 100 #average gain
-fano = 0.25 # a value close to argon
-p = 15 # poles for random interpolation
 
 class CoreFuncs(object):
-    
-    time  = np.arange(0, duration, DT) #0 to 1000 us (1 ms)
-    n = len(time)
-    sigmaF = np.sqrt(fano*gain)# sigma avec Fano sigma = sqrt(fano*mean)
-    gains = np.round(np.random.normal(gain, sigmaF, n_el))
 
-    def __init__(self):
+    def __init__(self, **kwargs):
         return
-
-    @classmethod
-    def show(cls):
-        print("[{}] The message is: {}".format(cls,"message"))
-        return
-
-    @classmethod
-    def test(cls):
-        print("Test message")
-        return
-    
     
     # definition of the functions: ion current and induced current
     @staticmethod
@@ -81,36 +40,78 @@ class CoreFuncs(object):
             return -q*(d-z+vi*t)/d
         else: 
             return -q
+    
 
-
-    @classmethod
-    def createPulses(self, distance, num=2): 
-        #indexes = indexes[:n_el]
-        a = distance #the distance of the two pulses
+    @staticmethod
+    def createPulses(instance, num=2):
         
+        #indexes = indexes[:n_el]
+        # the distance of the two pulses
         # create two pulses for the two electrons in a distance a  
-        s1 = np.zeros(self.n)
-        s2 = np.zeros(self.n)
-        raw_pulse = np.zeros(self.n)
+        a = instance.distance
+        s1 = np.zeros(instance.n)
+        s2 = np.zeros(instance.n)
+        raw_pulse = np.zeros(instance.n)
 
         for num in range (0, 2):
             index = 2000
             zeros_part = np.zeros(int(index))
-            time_temp = np.arange(0, DT*(self.n-index), DT)
+            time_temp = np.arange(0, InstanceRef.DT*(instance.n-index), InstanceRef.DT)
 
             if num == 0:
-                ic1 = self.gains[num] * CoreFuncs.ion_current(time_temp)
+                ic1 = instance.gains[num] * CoreFuncs.ion_current(time_temp)
                 pulse_temp1 = np.concatenate( (zeros_part, ic1), axis=0) 
                 s1 = s1 + pulse_temp1 
             if num == 1:
                 index = index + a
                 zeros_part = np.zeros(int(index))
-                time_temp = np.arange(0, DT*(self.n-index), DT)
-                ic2 = self.gains[num] * CoreFuncs.ion_current(time_temp) 
+                time_temp = np.arange(0, InstanceRef.DT*(instance.n-index), InstanceRef.DT)
+                ic2 = instance.gains[num] * CoreFuncs.ion_current(time_temp) 
                 pulse_temp2 = np.concatenate( (zeros_part, ic2), axis=0) 
                 s2 = s2 + pulse_temp2 
 
         # # the two pulses in one array
         raw_pulse = s1 + s2
-        return self.time,raw_pulse
+        return raw_pulse 
         
+    @staticmethod
+    def createOnePulse(coreInstance):
+        raw_pulse = CoreFuncs.createPulses(coreInstance)       
+        raw_pulse_temp = np.concatenate( (np.zeros(1000), raw_pulse), axis=0 )
+        pulse =  scipy.signal.fftconvolve(raw_pulse_temp, coreInstance.preamp_response, "same")
+        pulse = np.delete(pulse, range(4000, 5000), axis=0)
+        return pulse
+
+    @staticmethod
+    def createOnePulseWithNoise(coreInstance):
+        #white noise
+        noiseamp = 2
+
+        # add a white noise to the signal
+
+        noise = noiseamp * np.random.randn(coreInstance.n)
+        pulse = CoreFuncs.createOnePulse(coreInstance)
+        signal = pulse + noise
+        return signal
+
+    @staticmethod
+    def deconvoluteSingalWithNoise(coreInstance, signal):
+        length = len(signal)
+        signal_padded = np.zeros( length + len(coreInstance.preamp_response) - 1 )
+        signal_padded[:length] = signal
+
+        deconv, _ = scipy.signal.deconvolve(signal_padded, coreInstance.preamp_response)
+        return deconv
+
+
+    @staticmethod
+    def deconcoluteSignal(coreInstance, raw_pulse):
+        ion_resp = CoreFuncs.ion_current(InstanceRef.DT*np.arange(coreInstance.len_preamp_response), r_a = 0.1, r_c = 15, voltage = 2000, pressure = 1, mobility_0 = 2.e-6)
+
+        length = len(raw_pulse)
+        pulse_padded = np.zeros(length + len(ion_resp) - 1)
+        pulse_padded[:length] = raw_pulse
+
+        electron_signal, residual = scipy.signal.deconvolve(pulse_padded, ion_resp)
+        return electron_signal, residual
+       
