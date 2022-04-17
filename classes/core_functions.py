@@ -4,6 +4,7 @@ import numpy as np
 
 import scipy.fftpack
 from classes import core_instance as InstanceRef
+from array import array
 
 
 class CoreFuncs(object):
@@ -114,4 +115,25 @@ class CoreFuncs(object):
 
         electron_signal, residual = scipy.signal.deconvolve(pulse_padded, ion_resp)
         return electron_signal, residual
+
+
+    @staticmethod
+    def normalizeSignal(signal):
+        
+        #heights for the normalization
+        
+        signal_height = array( 'f', [0])
+        signal_height_position = np.argmax(signal)
+        signal_height[0] = signal[signal_height_position] 
+        signal_norm = signal / (signal_height[0])
+
+        return signal_norm
+
+        # raw_pulse_height = array( 'f', [0])
+        # raw_pulse_height_position = np.argmax(raw_pulse)
+        # raw_pulse_height[0] = raw_pulse[raw_pulse_height_position] 
+        # raw_pulse_norm = raw_pulse / (raw_pulse_height[0])
+        #normalized electron signal and raw pulse
+        
+        
        
