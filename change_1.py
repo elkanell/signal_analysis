@@ -6,6 +6,7 @@ Created on Mon Dec  9 16:25:22 2019
 @author: ioanniskatsioulas
 """
 
+# Test git submission
 # %%
 import matplotlib
 import numpy as np
