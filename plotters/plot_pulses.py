@@ -4,19 +4,20 @@ from classes import core_instance as instance
 
 import matplotlib.pyplot as plt
 import numpy as np
+from os import path
 
 
 plt.rcParams['axes.labelsize'] = 16
 plt.rcParams['axes.titlesize'] = 16
 
 core = base.CoreFuncs
-
+outpath = "/root/signal_analysis/plotters/signal_analysis_plots"
 
 class Plotter(object):
 
     # definition of a function that plots a signal in time domain 
 
-    figureNumOne = 1
+    figureNumOne = 0
 
     @staticmethod
     def plot(coreInstance, signal, title):       
@@ -25,12 +26,13 @@ class Plotter(object):
         Plotter.figureNumOne = Plotter.figureNumOne + 1
         plt.plot(coreInstance.time, signal)
         plt.title(title)
+        plt.savefig(path.join(outpath,"plot_{0}.png".format(Plotter.figureNumOne)))
         return
 
 
     # definition of a function that plots two signals together in time domain
 
-    figureNumTwo = 200
+    figureNumTwo = 1000
 
     @staticmethod
     def plotTwoSignals(coreInstance, signal1, label1, signal2, label2, title):       
@@ -41,12 +43,13 @@ class Plotter(object):
         plt.plot(coreInstance.time, signal2, label = label2)
         plt.title(title)
         plt.legend()
+        plt.savefig(path.join(outpath,"plot_{0}.png".format(Plotter.figureNumTwo)))
         return
 
 
     # definition of a function that plots a signal in frequency domain 
 
-    figureNumThree = 400
+    figureNumThree = 2000
 
     @staticmethod
     def plotFourier(coreInstance, signal, title):       
@@ -56,5 +59,6 @@ class Plotter(object):
         the_instance = instance.CoreInstance()
         transformed, frequencies = core.FourierTransform(the_instance, signal) 
         plt.plot(frequencies, np.abs(transformed))
-        plt.title(title)      
+        plt.title(title) 
+        plt.savefig(path.join(outpath,"plot_{0}.png".format(Plotter.figureNumThree)))   
         return
