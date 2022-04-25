@@ -87,6 +87,8 @@ class CoreFuncs(object):
         #for i in range (10):
         s = np.zeros(instance.n)
         s1 = np.zeros(instance.n)
+        s2 = np.zeros(instance.n)
+        s3 = np.zeros(instance.n)
         raw_pulse = np.zeros(instance.n)
 
         index = 2000
@@ -96,19 +98,47 @@ class CoreFuncs(object):
         r = np.random.normal(2000.0, 100.0, 3) # the distance of the pulses
         print(r)
 
+        a = np.abs(r[1] - r[0])
+        b = np.abs(r[2] - r[1])
+        print(2000 + a)
+        print(2000 + b)
+
         num = 0
 
         while num < 3:
-            index = r[num]
-            zeros_part = np.zeros(int(index))
-            time_temp = np.arange(0, InstanceRef.DT*(instance.n-index), InstanceRef.DT)
-            ic = gains[num] * CoreFuncs.ion_current(time_temp, r_a, r_c, voltage, pressure, mobility_0)
-            pulse_temp = np.concatenate( (zeros_part, ic), axis=0)
-            s = s + pulse_temp
-            num = num + 1
-            raw_pulse = raw_pulse + s
+            if num == 0:
+                ic1 = gains[num] * CoreFuncs.ion_current(time_temp, r_a, r_c, voltage, pressure, mobility_0)
+                pulse_temp1 = np.concatenate( (zeros_part, ic1), axis=0) 
+                s1 = s1 + pulse_temp1 
+                num = num + 1
+            if num == 1:
+                index = index + a
+                zeros_part = np.zeros(int(index))
+                time_temp = np.arange(0, InstanceRef.DT*(instance.n-index), InstanceRef.DT)
+                ic2 = gains[num] * CoreFuncs.ion_current(time_temp, r_a, r_c, voltage, pressure, mobility_0) 
+                pulse_temp2 = np.concatenate( (zeros_part, ic2), axis=0) 
+                s2 = s2 + pulse_temp2 
+                num = num + 1
+            if num == 2:
+                index = index + b
+                zeros_part = np.zeros(int(index))
+                time_temp = np.arange(0, InstanceRef.DT*(instance.n-index), InstanceRef.DT)
+                ic3 = gains[num] * CoreFuncs.ion_current(time_temp, r_a, r_c, voltage, pressure, mobility_0) 
+                pulse_temp3 = np.concatenate( (zeros_part, ic3), axis=0) 
+                s3 = s3 + pulse_temp3 
+                num = num + 1
+        
+        raw_pulse = s1 + s2 + s3
+        return raw_pulse
 
-        return raw_pulse 
+#index = r[num]
+#zeros_part = np.zeros(int(index))
+#time_temp = np.arange(0, InstanceRef.DT*(instance.n-index), InstanceRef.DT)
+#ic = gains[num] * CoreFuncs.ion_current(time_temp, r_a, r_c, voltage, pressure, mobility_0)
+#pulse_temp = np.concatenate( (zeros_part, ic), axis=0)
+#s = s + pulse_temp
+#num = num + 1
+#raw_pulse = raw_pulse + s
 
 
     # definition of a function that gives the convolution of the pulses with the preamplifier response    
