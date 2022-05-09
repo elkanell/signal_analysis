@@ -52,13 +52,28 @@ class Plotter(object):
     figureNumThree = 2000
 
     @staticmethod
-    def plotFourier(coreInstance, signal, title):       
+    def plotFourier(coreInstance, signal, frequencies, title):       
         
         plt.figure(Plotter.figureNumThree)
         Plotter.figureNumThree = Plotter.figureNumThree + 1
         the_instance = instance.CoreInstance()
-        transformed, frequencies = core.FourierTransform(the_instance, signal) 
-        plt.plot(frequencies, np.abs(transformed))
+        #transformed, frequencies = core.FourierTransform(the_instance, signal) 
+        plt.plot(frequencies[1:len(signal)//2], 2.0/len(signal) * np.abs(signal[1:len(signal)//2]))
         plt.title(title) 
         plt.savefig(path.join(outpath,"plot_{0}.png".format(Plotter.figureNumThree)))   
+        return
+
+    figureNumFour = 3000
+
+    @staticmethod
+    def plotTwoFourier(coreInstance, signal1, frequencies1, label1, signal2, frequencies2, label2, title):       
+        
+        plt.figure(Plotter.figureNumFour)
+        Plotter.figureNumFour = Plotter.figureNumFour + 1
+        plt.plot(frequencies1[1:len(signal1)//2], 2.0/len(signal1) * np.abs(signal1[1:len(signal1)//2]), label = label1)
+        plt.plot(frequencies2[1:len(signal2)//2], 2.0/len(signal2) * np.abs(signal2[1:len(signal2)//2]), label = label2)
+        plt.title(title)
+        plt.legend()
+        plt.xlim(0, 60000)
+        plt.savefig(path.join(outpath,"plot_{0}.png".format(Plotter.figureNumFour)))
         return

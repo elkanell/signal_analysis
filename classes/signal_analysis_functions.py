@@ -77,7 +77,7 @@ class CoreFuncs(object):
 
     #definition of a function that gives the pulses of three electrons in random distances between them 
     @staticmethod
-    def createThreePulses(instance, r_a, r_c, voltage, pressure, mobility_0, num=3): 
+    def createThreePulses(instance, r_a, r_c, voltage, pressure, mobility_0, diffusion_coefficient, num=3): 
      
         n_el = 3 # number of the electrons
 
@@ -95,7 +95,10 @@ class CoreFuncs(object):
         zeros_part = np.zeros(int(index))
         time_temp = np.arange(0, InstanceRef.DT*(instance.n-index), InstanceRef.DT)
 
-        r = np.random.normal(2000.0, 100.0, 3) # the distance of the pulses
+        time_of_arrival = 2000
+        sigma = (2 * diffusion_coefficient * time_of_arrival) ** (1/2)
+
+        r = np.random.normal(2000.0, sigma, 3) # the distance of the pulses
         print(r)
 
         a = np.abs(r[1] - r[0])
@@ -209,8 +212,8 @@ class CoreFuncs(object):
         d = 1.0 / InstanceRef.SRATE
 
         yf = fft(signal)
-        xf = fftfreq(N, d)
-
+        xf = fftfreq(N, d)[:N//2]
+        
         return yf, xf
 
 
