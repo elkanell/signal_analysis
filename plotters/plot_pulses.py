@@ -32,7 +32,7 @@ class Plotter(object):
 
     # definition of a function that plots two signals together in time domain
 
-    figureNumTwo = 1000
+    figureNumTwo = 10000
 
     @staticmethod
     def plotTwoSignals(coreInstance, signal1, label1, signal2, label2, title):       
@@ -49,7 +49,7 @@ class Plotter(object):
 
     # definition of a function that plots a signal in frequency domain 
 
-    figureNumThree = 2000
+    figureNumThree = 20000
 
     @staticmethod
     def plotFourier(coreInstance, signal, frequencies, title):       
@@ -63,7 +63,7 @@ class Plotter(object):
         plt.savefig(path.join(outpath,"plot_{0}.png".format(Plotter.figureNumThree)))   
         return
 
-    figureNumFour = 3000
+    figureNumFour = 30000
 
     @staticmethod
     def plotTwoFourier(coreInstance, signal1, frequencies1, label1, signal2, frequencies2, label2, title):       

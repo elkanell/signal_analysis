@@ -20,7 +20,6 @@ class CoreInstance(object):
     len_preamp_response = 0
     preamp_fall_time = 0
     preamp_response = 0
-
     
     def __init__(self, **kwargs):
         # Initialize properties' values 
