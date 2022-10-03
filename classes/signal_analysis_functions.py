@@ -76,9 +76,58 @@ class CoreFuncs(object):
         return raw_pulse 
 
 
+    # definition of a function that gives the pulses of two electrons in random distance (gaussian with the radial distance)
+    @staticmethod
+    def createTwoPulsesRandom(instance, r_a, r_c, voltage, pressure, mobility_0, radial_distance, num=2):
+        n_el = 2 # number of the electrons
+
+        sigmaF = np.sqrt(InstanceRef.FANO*InstanceRef.GAIN) # sigma avec Fano sigma = sqrt(fano*mean)
+        gains = np.round(np.random.normal(InstanceRef.GAIN, sigmaF, n_el))
+        
+        #for i in range (10):
+        s = np.zeros(instance.n)
+        s1 = np.zeros(instance.n)
+        s2 = np.zeros(instance.n)
+        raw_pulse = np.zeros(instance.n)
+
+        index = 2000
+        zeros_part = np.zeros(int(index))
+        time_temp = np.arange(0, InstanceRef.DT*(instance.n-index), InstanceRef.DT)
+
+        time_of_arrival = 2000
+        sigma = ((radial_distance / r_c) ** 3) * 20 # diffusion time
+
+        r = np.random.normal(21.0, sigma, 2) # arrival time
+
+        a = np.abs(r[1] - r[0])
+        a_dist = int(time_of_arrival + a)
+        #print(a_dist)
+
+        num = 0
+
+        while num < 2:
+            if num == 0:
+                ic1 = gains[num] * CoreFuncs.ion_current(time_temp, r_a, r_c, voltage, pressure, mobility_0)
+                pulse_temp1 = np.concatenate( (zeros_part, ic1), axis=0) 
+                s1 = s1 + pulse_temp1 
+                num = num + 1
+            if num == 1:
+                index = a_dist
+                zeros_part = np.zeros(int(index))
+                time_temp = np.arange(0, InstanceRef.DT*(instance.n-index), InstanceRef.DT)
+                ic2 = gains[num] * CoreFuncs.ion_current(time_temp, r_a, r_c, voltage, pressure, mobility_0) 
+                pulse_temp2 = np.concatenate( (zeros_part, ic2), axis=0) 
+                s2 = s2 + pulse_temp2 
+                num = num + 1
+
+        raw_pulse = np.add(s1, s2)
+
+        return raw_pulse, a_dist
+        
+
     # definition of a function that gives the pulses of three electrons in random distance (gaussian with the radial distance)
     @staticmethod
-    def createThreePulses(instance, r_a, r_c, voltage, pressure, mobility_0, num=3):
+    def createThreePulsesRandom(instance, r_a, r_c, voltage, pressure, mobility_0, radial_distance, num=3):
         n_el = 3 # number of the electrons
 
         sigmaF = np.sqrt(InstanceRef.FANO*InstanceRef.GAIN) # sigma avec Fano sigma = sqrt(fano*mean)
@@ -96,18 +145,16 @@ class CoreFuncs(object):
         time_temp = np.arange(0, InstanceRef.DT*(instance.n-index), InstanceRef.DT)
 
         time_of_arrival = 2000
-        radial_distance = 30  # distance at the surface of the sphere
-        sigma = ((radial_distance / r_c) ** 3) * 20
+        sigma = ((radial_distance / r_c) ** 3) * 20 # diffusion time
 
-        r = np.random.normal(21.0, sigma, 3) # the distance of the pulses
-        print(r)
+        r = np.random.normal(21.0, sigma, 3) # arrival time
 
         a = np.abs(r[1] - r[0])
         a_dist = int(time_of_arrival + a)
         b = np.abs(r[2] - r[1])
         b_dist = int(time_of_arrival + b)
-        print(a_dist)
-        print(b_dist)
+        #print(a_dist)
+        #print(b_dist)
 
         num = 0
 
@@ -118,26 +165,33 @@ class CoreFuncs(object):
                 s1 = s1 + pulse_temp1 
                 num = num + 1
             if num == 1:
-                index = index + a
-                zeros_part = np.zeros(int(index))
-                time_temp = np.arange(0, InstanceRef.DT*(instance.n-index), InstanceRef.DT)
+                index1 = a_dist
+                zeros_part = np.zeros(int(index1))
+                time_temp = np.arange(0, InstanceRef.DT*(instance.n-index1), InstanceRef.DT)
                 ic2 = gains[num] * CoreFuncs.ion_current(time_temp, r_a, r_c, voltage, pressure, mobility_0) 
                 pulse_temp2 = np.concatenate( (zeros_part, ic2), axis=0) 
                 s2 = s2 + pulse_temp2 
                 num = num + 1
             if num == 2:
-                index = index + b
-                zeros_part = np.zeros(int(index))
-                time_temp = np.arange(0, InstanceRef.DT*(instance.n-index), InstanceRef.DT)
+                index2 = b_dist
+                zeros_part = np.zeros(int(index2))
+                time_temp = np.arange(0, InstanceRef.DT*(instance.n-index2), InstanceRef.DT)
                 ic3 = gains[num] * CoreFuncs.ion_current(time_temp, r_a, r_c, voltage, pressure, mobility_0) 
                 pulse_temp3 = np.concatenate( (zeros_part, ic3), axis=0) 
                 s3 = s3 + pulse_temp3 
                 num = num + 1
         
-        raw_pulse = np.add(s1, s2, s3)
+        # raw_pulse = np.add(s1, s2, s3)
 
-        return raw_pulse
+        arr = np.array([s1, 
+          s2,
+          s3])
+        raw_pulse = np.add(0, arr.sum(axis=0))
+
+        return raw_pulse, a_dist, b_dist
         
+
+
 
     # definition of a function that gives the convolution of the pulses with the preamplifier response    
     @staticmethod
@@ -162,7 +216,7 @@ class CoreFuncs(object):
 
     # definition of a function that adds a noise to the raw pulse
     @staticmethod
-    def createNoiseForRawPulse(coreInstance, pulse):
+    def createNoiseForElectronicSignal(coreInstance, pulse):
         #white noise
         noiseamp = 2
         
