@@ -7,7 +7,7 @@ DT = 1e+6 / SRATE # in μs
 PULSE_MAX_DURATION = 50 # in μs
 
 N_EL = 2 # the initial number of the electrons
-GAIN = 100 # average gain
+GAIN = 10000 # average gain
 FANO = 0.25 # a value close to argon
 
 class CoreInstance(object):   
@@ -29,7 +29,7 @@ class CoreInstance(object):
         self.gains = np.round(np.random.normal(GAIN, self.sigmaF, N_EL))
         # self.distance = distance
         self.len_preamp_response = int(self.n/2)
-        self.preamp_fall_time = 125
+        self.preamp_fall_time = 50
         self.preamp_response = np.exp(- DT * np.arange( self.len_preamp_response ) / self.preamp_fall_time)
 
         return

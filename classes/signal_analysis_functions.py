@@ -125,6 +125,9 @@ class CoreFuncs(object):
         return raw_pulse, a_dist
         
 
+
+    ### CHECK ###
+
     # definition of a function that gives the pulses of three electrons in random distance (gaussian with the radial distance)
     @staticmethod
     def createThreePulsesRandom(instance, r_a, r_c, voltage, pressure, mobility_0, radial_distance, num=3):
@@ -202,6 +205,9 @@ class CoreFuncs(object):
         return pulse
 
 
+
+    ### CHECK ###
+
     # definition of a function that adds a white noise to the electronic signal
     @staticmethod
     def createElectronicSignalWithNoise(coreInstance, pulse):
@@ -237,6 +243,10 @@ class CoreFuncs(object):
         deconv, _ = scipy.signal.deconvolve(signal_padded, coreInstance.preamp_response)
         return deconv
 
+
+
+
+    ### CHECK ###
 
     # definition of a function that gives the deconvolution of the raw pulse with the ion response
     @staticmethod

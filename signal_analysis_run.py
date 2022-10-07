@@ -15,7 +15,7 @@ import openpyxl
 # Create a new instance of coreInstance object
 the_instance = instance.CoreInstance()
 core = base.CoreFuncs
-radial_distance_values = [30,20,10] #the radial distances that we will use for the electron counting
+radial_distance_values = [30,15,5] #the radial distances that we will use for the electron counting
 
 # We use a gas: Ne and CH4 
 # r_a = 0.315 cm, r_c = 30 cm, voltage = 2520 V
@@ -23,13 +23,20 @@ radial_distance_values = [30,20,10] #the radial distances that we will use for t
 
 
 # We take the raw pulse of two electrons in a given time distance a = 2 μs
-raw_pulse = core.createTwoPulses(the_instance, distance = 2, r_a = 0.315, r_c = 30, voltage = 2520, pressure = 3.1, mobility_0 = 7.5*10**(-6))
+raw_pulse = core.createTwoPulses(the_instance, distance = 3, r_a = 0.315, r_c = 30, voltage = 2520, pressure = 3.1, mobility_0 = 7.5*10**(-6))
 plotter.Plotter.plot(
     the_instance, 
     raw_pulse,
     'The two pulses in a given distance a = 2 μs'
 )
 plt.xlim(1950, 2050)
+
+raw_pulse = core.createTwoPulses(the_instance, distance = 3, r_a = 0.315, r_c = 30, voltage = 2520, pressure = 3.1, mobility_0 = 7.5*10**(-6))
+plotter.Plotter.plot(
+    the_instance, 
+    raw_pulse,
+    'The two pulses in a given distance a = 2 μs'
+)
 
 # We take the convolution of the raw pulse with the preamplifier response
 # We take the electronic signal of the two electrons
@@ -58,17 +65,17 @@ plotter.Plotter.plot(
     deconv,
     'The pulse of the two electrons with noise'
 )
-
+plt.xlim(1950, 2050)
 
 # We take the deconvolution of the raw pulse with the ion response
 # We take delta-functions
-electron_signal, residual =  core.deconvolutionWithIonResponse(the_instance, raw_pulse, r_a = 0.315, r_c = 30, voltage = 2520, pressure = 3.1, mobility_0 = 7.5*10**(-6))
+electron_signal, residual =  core.deconvolutionWithIonResponse(the_instance, deconv, r_a = 0.315, r_c = 30, voltage = 2520, pressure = 3.1, mobility_0 = 7.5*10**(-6))
 plotter.Plotter.plot(
     the_instance, 
     electron_signal,
     'The deconvolution of the ion response and the raw pulse'
 )
-
+plt.xlim(1950, 2050)
 
 # We normalize the raw pulse and the delta-functions
 # We plot them together 
@@ -151,6 +158,10 @@ for rd in radial_distance_values:
         plt.xlim(1950, 2100)
 
         drift_time.append(a_dist)
+
+
+         
+        ### CHECK ###
 
         # We check how many electrons we can see
         if a_dist >= (2000+2):
@@ -250,7 +261,7 @@ for rd in radial_distance_values:
 
     print('Distance:', rd)
     print('Number of one electron:', one_el)
-    print('Number of two electron:', two_el)
+    print('Number of two electrons:', two_el)
 
     num_of_electrons = ['1', '2']
     results = [one_el, two_el]
@@ -290,7 +301,12 @@ for rd in radial_distance_values:
 
         drift_time.append(a_dist)
         drift_time.append(b_dist)
+        
 
+
+        ### CHECK ###
+
+        # We check how many electrons we can see
         if a_dist == b_dist: 
             if a_dist== 2000:
                 one_el += 1
