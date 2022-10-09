@@ -30,7 +30,8 @@ plotter.Plotter.plot(
     the_instance, 
     raw_pulse,
     'Time [μs]',
-    'Amplitude'
+    'Amplitude', 
+    color = 'blue'
 )
 plt.xlim(1950, 2050)
 
@@ -41,16 +42,18 @@ plotter.Plotter.plot(
     the_instance, 
     pulse,
     'Time [μs]',
-    'Amplitude'
+    'Amplitude',
+    color = 'purple'
 )
 
 # We add a white noise to the electronic signal 
-signalWithNoise, noise = core.createElectronicSignalWithNoise(the_instance, pulse)
+signalWithNoise = core.createElectronicSignalWithNoise(the_instance, pulse)
 plotter.Plotter.plot(
     the_instance, 
     signalWithNoise,
     'Time [μs]',
-    'Amplitude'
+    'Amplitude',
+    color = 'darkcyan'
 )
 
 # We take the deconvolution of the electronic signal with noise and the preamplifier response
@@ -60,7 +63,8 @@ plotter.Plotter.plot(
     the_instance, 
     deconv,
     'Time [μs]',
-    'Amplitude'
+    'Amplitude',
+    color = 'green'
 )
 plt.xlim(1950, 2050)
 
@@ -71,16 +75,28 @@ plotter.Plotter.plot(
     the_instance, 
     electron_signal,
     'Time [μs]',
-    'Amplitude'
+    'Amplitude',
+    color = 'red'
 )
 plt.xlim(1950, 2050)
 
-indexes_max_above_noise = np.where(electron_signal > (100*noise))
+indexes_max_above_noise = np.where(electron_signal > 550)
+
+print(indexes_max_above_noise)
 values_max = electron_signal[indexes_max_above_noise]
 print(values_max)
 
 number_of_max = len(values_max)
 print(number_of_max)
+
+
+tdiff = np.diff(indexes_max_above_noise, axis = 1)[0]
+print(tdiff)
+
+two_noise = 0
+for differ in range(len(tdiff)):
+    if tdiff[differ] >=2 and tdiff[differ] < 100:
+        two_noise += 1
 
 
 """# We normalize the raw pulse and the delta-functions
@@ -157,20 +173,25 @@ for rd in radial_distance_values:
     one_el = 0
     two_el = 0
 
+    one_noise = 0
+    two_noise = 0
+
     print('Distance:', rd, 'cm')
  
     for i in range (10):  #10
     # We take the raw pulse of two electrons in a random time distance between them 
     # We take the random distance from a normal distribution with sigma that depends on the radial distance
+        el = 1
 
         raw_pulses, a_dist, r = core.createTwoPulsesRandom(the_instance, r_a = 0.315, r_c = 30, voltage = 2520, pressure = 3.1, mobility_0 = 7.5*10**(-6), radial_distance = rd)
         plotter.Plotter.plot(
             the_instance,
             raw_pulses,
             'Time [μs]',
-            'Amplitude'
+            'Amplitude',
+            color = 'blue'
         )
-        plt.xlim(1950, 2100)
+        plt.xlim(1900, 2100)
 
         drift_time.append(int(r[0]))
         drift_time.append(int(r[1]))
@@ -204,13 +225,44 @@ for rd in radial_distance_values:
             the_instance, 
             deconv,
             'Time [μs]',
-            'Amplitude'
+            'Amplitude',
+            color = 'green'
         )
 
+        electron_signal, residual =  core.deconvolutionWithIonResponse(the_instance, deconv, r_a = 0.315, r_c = 30, voltage = 2520, pressure = 3.1, mobility_0 = 7.5*10**(-6))
+        plotter.Plotter.plot(
+            the_instance, 
+            electron_signal,
+            'Time [μs]',
+            'Amplitude',
+            color = 'red'
+        )
+        plt.xlim(1900, 2100)
 
-    for i in range (8):  #890
+        indexes_max_above_noise = np.where(electron_signal > 550)
+        
+        values_max = electron_signal[indexes_max_above_noise]
+        
+
+        number_of_max = len(values_max)
+        
+
+        tdiff = np.diff(indexes_max_above_noise, axis = 1)[0]
+        
+
+        for differ in range(len(tdiff)):
+            if tdiff[differ] >=2 and tdiff[differ] < 100:
+                el += 1
+            
+        if el == 1:
+            one_noise += 1
+        elif el == 2:
+            two_noise += 1
+
+    for i in range (890):  #890
     # We take the raw pulse of two electrons in a random time distance between them 
     # We take the random distance from a normal distribution with sigma that depends on the radial distance
+        el = 1
 
         raw_pulses, a_dist, r = core.createTwoPulsesRandom(the_instance, r_a = 0.315, r_c = 30, voltage = 2520, pressure = 3.1, mobility_0 = 7.5*10**(-6), radial_distance = rd)
         drift_time.append(int(r[0]))
@@ -239,10 +291,31 @@ for rd in radial_distance_values:
         electronicSignalWithNoise = core.createElectronicSignalWithNoise(the_instance, electronicSignal)
 
         deconv = core.deconvolutedSingalWithNoise(the_instance, electronicSignalWithNoise)
+        
+        electron_signal, residual =  core.deconvolutionWithIonResponse(the_instance, deconv, r_a = 0.315, r_c = 30, voltage = 2520, pressure = 3.1, mobility_0 = 7.5*10**(-6))
+
+        indexes_max_above_noise = np.where(electron_signal > 550)
+        
+        values_max = electron_signal[indexes_max_above_noise]
+        
+        number_of_max = len(values_max)
     
-    for i in range (10):  #100
+        tdiff = np.diff(indexes_max_above_noise, axis = 1)[0]
+
+        for differ in range(len(tdiff)):
+            if tdiff[differ] >=2 and tdiff[differ] < 100:
+                el += 1
+            
+        if el == 1:
+            one_noise += 1
+        elif el == 2:
+            two_noise += 1
+
+
+    for i in range (100):  #100
     # We take the raw pulse of two electrons in a random time distance between them 
     # We take the random distance from a normal distribution with sigma that depends on the radial distance
+        el = 1
 
         raw_pulses, a_dist, r = core.createTwoPulsesRandom(the_instance, r_a = 0.315, r_c = 30, voltage = 2520, pressure = 3.1, mobility_0 = 7.5*10**(-6), radial_distance = rd)
         drift_time.append(int(r[0]))
@@ -267,14 +340,36 @@ for rd in radial_distance_values:
         arr = np.column_stack((arr, height_array))
 
         plt.figure(40000)
+        plt.xlabel('Time [μs]')
+        plt.ylabel('Amplitude')
         plt.plot(the_instance.time, raw_pulses, 'k', alpha=0.2)
-        plt.xlim(1900, 2200)
+        plt.xlim(1850, 2150)
 
         electronicSignal = core.createElectronicSignal(the_instance, raw_pulses)
 
         electronicSignalWithNoise = core.createElectronicSignalWithNoise(the_instance, electronicSignal)
 
         deconv = core.deconvolutedSingalWithNoise(the_instance, electronicSignalWithNoise)
+        
+        electron_signal, residual =  core.deconvolutionWithIonResponse(the_instance, deconv, r_a = 0.315, r_c = 30, voltage = 2520, pressure = 3.1, mobility_0 = 7.5*10**(-6))
+
+        indexes_max_above_noise = np.where(electron_signal > 550)
+        
+        values_max = electron_signal[indexes_max_above_noise]
+        
+        number_of_max = len(values_max)
+        
+        tdiff = np.diff(indexes_max_above_noise, axis = 1)[0]
+        
+        for differ in range(len(tdiff)):
+            if tdiff[differ] >=2 and tdiff[differ] < 100:
+                el += 1
+            
+        if el == 1:
+            one_noise += 1
+        elif el == 2:
+            two_noise += 1
+
 
     print('Number of one electron:', one_el)
     print('Number of two electrons:', two_el)
@@ -282,12 +377,26 @@ for rd in radial_distance_values:
     num_of_electrons = ['1', '2']
     results = [one_el, two_el]
     plt.figure(plt.gcf().number+1)
-    plt.bar(num_of_electrons, results, color = '#4CAF50', width = 0.2)
+    plt.bar(num_of_electrons, results, color = 'mediumvioletred', width = 0.2)
 
     #set title and x, y - axes labels
-    plt.title('For radial distance = '+str(rd) +' cm')
     plt.xlabel('Number of electrons')
-    plt.ylabel('Appearances')
+    plt.ylabel('Frequency')
+    
+    #show plot to user
+    plt.show()
+
+    print('Number of one electron with noise:', one_noise)
+    print('Number of two electrons with noise:', two_noise)
+
+    num_of_electrons = ['1', '2']
+    results = [one_noise, two_noise]
+    plt.figure(plt.gcf().number+1)
+    plt.bar(num_of_electrons, results, color = 'rebeccapurple', width = 0.2)
+
+    #set title and x, y - axes labels
+    plt.xlabel('Number of electrons')
+    plt.ylabel('Frequency')
     
     #show plot to user
     plt.show()
@@ -299,7 +408,7 @@ for rd in radial_distance_values:
     (mu, sigma) = norm.fit(drift_time)
 
     # the histogram of the data
-    n, bins, patches = plt.hist(drift_time, 20, density=True, stacked=True, facecolor='green', alpha=0.75)
+    n, bins, patches = plt.hist(drift_time, 20, density=True, stacked=True, facecolor='orchid', alpha=0.75)
 
     # add a 'best fit' line
     y = norm.pdf( bins, mu, sigma)
@@ -315,20 +424,26 @@ for rd in radial_distance_values:
     two_el = 0
     three_el = 0
 
+    one_noise = 0
+    two_noise = 0
+    three_noise = 0
+
     print('Distance:', rd)
 
     for i in range (10):  #10
     # We take the raw pulse of three electrons in a random time distance between them 
     # We take the random distance from a normal distribution with sigma that depends on the radial distance
+        el = 1
 
         raw_pulses, a_dist, b_dist, r = core.createThreePulsesRandom(the_instance, r_a = 0.315, r_c = 30, voltage = 2520, pressure = 3.1, mobility_0 = 7.5*10**(-6), radial_distance = rd)
         plotter.Plotter.plot(
             the_instance,
             raw_pulses,
             'Time [μs]',
-            'Amplitude'
+            'Amplitude',
+            color = 'blue'
         )
-        plt.xlim(1950, 2100)
+        plt.xlim(1900, 2100)
 
         drift_time.append(int(r[0]))
         drift_time.append(int(r[1]))
@@ -379,12 +494,44 @@ for rd in radial_distance_values:
             the_instance, 
             deconv,
             'Time [μs]',
-            'Amplitude'
+            'Amplitude',
+            color = 'green'
         )
 
-    for i in range (8):  #890
+        electron_signal, residual =  core.deconvolutionWithIonResponse(the_instance, deconv, r_a = 0.315, r_c = 30, voltage = 2520, pressure = 3.1, mobility_0 = 7.5*10**(-6))
+        plotter.Plotter.plot(
+            the_instance, 
+            electron_signal,
+            'Time [μs]',
+            'Amplitude',
+            color = 'red'
+        )
+        plt.xlim(1900, 2100)
+
+        indexes_max_above_noise = np.where(electron_signal > 550)
+
+        values_max = electron_signal[indexes_max_above_noise]
+        
+        number_of_max = len(values_max)
+        
+        tdiff = np.diff(indexes_max_above_noise, axis = 1)[0]
+        
+        for differ in range(len(tdiff)):
+            if tdiff[differ] >=2 and tdiff[differ] < 100:
+                el += 1
+
+        if el == 1:
+            one_noise += 1
+        elif el == 2:
+            two_noise += 1
+        elif el == 3:
+            three_noise += 1
+
+
+    for i in range (10):  #890
     # We take the raw pulse of three electrons in a random time distance between them 
     # We take the random distance from a normal distribution with sigma that depends on the radial distance
+        el = 1
 
         raw_pulses, a_dist, b_dist, r = core.createThreePulsesRandom(the_instance, r_a = 0.315, r_c = 30, voltage = 2520, pressure = 3.1, mobility_0 = 7.5*10**(-6), radial_distance = rd)
         
@@ -429,10 +576,32 @@ for rd in radial_distance_values:
         electronicSignalWithNoise = core.createElectronicSignalWithNoise(the_instance, electronicSignal)
 
         deconv = core.deconvolutedSingalWithNoise(the_instance, electronicSignalWithNoise)
+        
+        electron_signal, residual =  core.deconvolutionWithIonResponse(the_instance, deconv, r_a = 0.315, r_c = 30, voltage = 2520, pressure = 3.1, mobility_0 = 7.5*10**(-6))
+        
+        indexes_max_above_noise = np.where(electron_signal > 550)
+        
+        values_max = electron_signal[indexes_max_above_noise]
+        
+        number_of_max = len(values_max)
+        
+        tdiff = np.diff(indexes_max_above_noise, axis = 1)[0]
+           
+        for differ in range(len(tdiff)):
+            if tdiff[differ] >=2 and tdiff[differ] < 100:
+                el += 1
+
+        if el == 1:
+            one_noise += 1
+        elif el == 2:
+            two_noise += 1
+        elif el == 3:
+            three_noise += 1
 
     for i in range (10):  #100
     # We take the raw pulse of three electrons in a random time distance between them 
     # We take the random distance from a normal distribution with sigma that depends on the radial distance
+        el = 1
 
         raw_pulses, a_dist, b_dist, r = core.createThreePulsesRandom(the_instance, r_a = 0.315, r_c = 30, voltage = 2520, pressure = 3.1, mobility_0 = 7.5*10**(-6), radial_distance = rd)
         
@@ -473,8 +642,10 @@ for rd in radial_distance_values:
         arr = np.column_stack((arr, height_array))
 
         plt.figure(5000)
+        plt.xlabel('Time [μs]')
+        plt.ylabel('Amplitude')
         plt.plot(the_instance.time, raw_pulses, 'k', alpha=0.2)
-        plt.xlim(1900, 2200)
+        plt.xlim(1850, 2150)
     
         electronicSignal = core.createElectronicSignal(the_instance, raw_pulses)
 
@@ -482,6 +653,27 @@ for rd in radial_distance_values:
 
         deconv = core.deconvolutedSingalWithNoise(the_instance, electronicSignalWithNoise)
         
+        electron_signal, residual =  core.deconvolutionWithIonResponse(the_instance, deconv, r_a = 0.315, r_c = 30, voltage = 2520, pressure = 3.1, mobility_0 = 7.5*10**(-6))
+        
+        indexes_max_above_noise = np.where(electron_signal > 550)
+        
+        values_max = electron_signal[indexes_max_above_noise]
+        
+        number_of_max = len(values_max)
+        
+        tdiff = np.diff(indexes_max_above_noise, axis = 1)[0]
+           
+        for differ in range(len(tdiff)):
+            if tdiff[differ] >=2 and tdiff[differ] < 100:
+                el += 1
+
+        if el == 1:
+            one_noise += 1
+        elif el == 2:
+            two_noise += 1
+        elif el == 3:
+            three_noise += 1
+
     print('Number of one electron:', one_el)
     print('Number of two electrons:', two_el)
     print('Number of three electrons:', three_el)
@@ -489,12 +681,27 @@ for rd in radial_distance_values:
     num_of_electrons = ['1', '2', '3']
     results = [one_el, two_el, three_el]
     plt.figure(plt.gcf().number+1)
-    plt.bar(num_of_electrons, results, color = 'red', width = 0.2)
+    plt.bar(num_of_electrons, results, color = 'mediumvioletred', width = 0.2)
 
     #set title and x, y - axes labels
-    plt.title('For radial distance = '+str(rd) +' cm')
     plt.xlabel('Number of electrons')
-    plt.ylabel('Appearances')
+    plt.ylabel('Frequency')
+    
+    #show plot to user
+    plt.show()
+
+    print('Number of one electron with noise:', one_noise)
+    print('Number of two electrons with noise:', two_noise)
+    print('Number of three electrons with noise:', three_noise)
+
+    num_of_electrons = ['1', '2', '3']
+    results = [one_noise, two_noise, three_noise]
+    plt.figure(plt.gcf().number+1)
+    plt.bar(num_of_electrons, results, color = 'rebeccapurple', width = 0.2)
+
+    #set title and x, y - axes labels
+    plt.xlabel('Number of electrons')
+    plt.ylabel('Frequency')
     
     #show plot to user
     plt.show()
@@ -504,7 +711,7 @@ for rd in radial_distance_values:
     (mu, sigma) = norm.fit(drift_time)
 
     # the histogram of the data
-    n, bins, patches = plt.hist(drift_time, 20, density=True, stacked=True, facecolor='green', alpha=0.75)
+    n, bins, patches = plt.hist(drift_time, 20, density=True, stacked=True, facecolor='orchid', alpha=0.75)
 
     # add a 'best fit' line
     y = norm.pdf( bins, mu, sigma)

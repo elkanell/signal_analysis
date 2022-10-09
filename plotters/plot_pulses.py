@@ -20,11 +20,11 @@ class Plotter(object):
     figureNumOne = 0
 
     @staticmethod
-    def plot(coreInstance, signal, xlabel, ylabel):       
+    def plot(coreInstance, signal, xlabel, ylabel, color):       
         
         plt.figure(Plotter.figureNumOne)
         Plotter.figureNumOne = Plotter.figureNumOne + 1
-        plt.plot(coreInstance.time, signal)
+        plt.plot(coreInstance.time, signal, color)
         plt.xlabel(xlabel)
         plt.ylabel(ylabel)
         plt.savefig(path.join(outpath,"plot_{0}.png".format(Plotter.figureNumOne)))

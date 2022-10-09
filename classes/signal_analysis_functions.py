@@ -227,7 +227,7 @@ class CoreFuncs(object):
         #noise = noiseamp * np.random.randn(coreInstance.n)
         noise = np.random.normal(0, 4.3, coreInstance.n)
         signal = pulse + noise
-        return signal, noise
+        return signal
 
     # definition of a function that adds a noise to the raw pulse
     @staticmethod
