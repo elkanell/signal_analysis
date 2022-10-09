@@ -12,6 +12,8 @@ import numpy as np
 import pandas as pd
 import openpyxl
 
+import scipy
+
 # Create a new instance of coreInstance object
 the_instance = instance.CoreInstance()
 core = base.CoreFuncs
@@ -23,20 +25,14 @@ radial_distance_values = [30,15,5] #the radial distances that we will use for th
 
 
 # We take the raw pulse of two electrons in a given time distance a = 2 μs
-raw_pulse = core.createTwoPulses(the_instance, distance = 3, r_a = 0.315, r_c = 30, voltage = 2520, pressure = 3.1, mobility_0 = 7.5*10**(-6))
+raw_pulse = core.createTwoPulses(the_instance, distance = 2, r_a = 0.315, r_c = 30, voltage = 2520, pressure = 3.1, mobility_0 = 7.5*10**(-6))
 plotter.Plotter.plot(
     the_instance, 
     raw_pulse,
-    'The two pulses in a given distance a = 2 μs'
+    'Time [μs]',
+    'Amplitude'
 )
 plt.xlim(1950, 2050)
-
-raw_pulse = core.createTwoPulses(the_instance, distance = 3, r_a = 0.315, r_c = 30, voltage = 2520, pressure = 3.1, mobility_0 = 7.5*10**(-6))
-plotter.Plotter.plot(
-    the_instance, 
-    raw_pulse,
-    'The two pulses in a given distance a = 2 μs'
-)
 
 # We take the convolution of the raw pulse with the preamplifier response
 # We take the electronic signal of the two electrons
@@ -44,18 +40,18 @@ pulse = core.createElectronicSignal(the_instance, raw_pulse)
 plotter.Plotter.plot(
     the_instance, 
     pulse,
-    'The electronic signal of the two electrons'
+    'Time [μs]',
+    'Amplitude'
 )
 
-
 # We add a white noise to the electronic signal 
-signalWithNoise = core.createElectronicSignalWithNoise(the_instance, pulse)
+signalWithNoise, noise = core.createElectronicSignalWithNoise(the_instance, pulse)
 plotter.Plotter.plot(
     the_instance, 
     signalWithNoise,
-    'The electronic signal with noise'
+    'Time [μs]',
+    'Amplitude'
 )
-
 
 # We take the deconvolution of the electronic signal with noise and the preamplifier response
 # We take the initial raw pulse of the two electrons with noise
@@ -63,21 +59,31 @@ deconv =  core.deconvolutedSingalWithNoise(the_instance, signalWithNoise)
 plotter.Plotter.plot(
     the_instance, 
     deconv,
-    'The pulse of the two electrons with noise'
+    'Time [μs]',
+    'Amplitude'
 )
 plt.xlim(1950, 2050)
 
-# We take the deconvolution of the raw pulse with the ion response
+# We take the deconvolution of the deconvolved signal with noise with the ion response
 # We take delta-functions
 electron_signal, residual =  core.deconvolutionWithIonResponse(the_instance, deconv, r_a = 0.315, r_c = 30, voltage = 2520, pressure = 3.1, mobility_0 = 7.5*10**(-6))
 plotter.Plotter.plot(
     the_instance, 
     electron_signal,
-    'The deconvolution of the ion response and the raw pulse'
+    'Time [μs]',
+    'Amplitude'
 )
 plt.xlim(1950, 2050)
 
-# We normalize the raw pulse and the delta-functions
+indexes_max_above_noise = np.where(electron_signal > (100*noise))
+values_max = electron_signal[indexes_max_above_noise]
+print(values_max)
+
+number_of_max = len(values_max)
+print(number_of_max)
+
+
+"""# We normalize the raw pulse and the delta-functions
 # We plot them together 
 raw_pulse_norm = core.normalizedSignal(raw_pulse)
 electron_signal_norm = core.normalizedSignal(electron_signal)
@@ -88,7 +94,8 @@ plotter.Plotter.plotTwoSignals(
     'deconvolution',
     raw_pulse_norm,
     'raw pulse',
-    'The deconvolution and the raw pulse (normalized)'
+    'Time [μs]',
+    'Normalized Amplitude'
 )
 
 
@@ -98,7 +105,8 @@ plotter.Plotter.plotFourier(
     the_instance,
     transform,
     frequencies,
-    'Fourier Transform of the electronic signal'
+    'Frequency [Hz]',
+    'Amplitude'
 )
 
 
@@ -108,7 +116,8 @@ plotter.Plotter.plotFourier(
     the_instance,
     transformWithNoise,
     frequenciesNoise,
-    'Fourier Transform of the electronic signal with noise'
+    'Frequency [Hz]',
+    'Amplitude'
 )
 
 plotter.Plotter.plotTwoFourier(
@@ -119,11 +128,14 @@ plotter.Plotter.plotTwoFourier(
     transformWithNoise,
     frequenciesNoise,
     'Fourier with noise',
-    'The Fourier Transforms'
+    'Frequency [Hz]',
+    'Amplitude'
 )
-
+"""
 
 # %%
+
+# For two electrons:
 drift_time = []
 
 rows, cols = (4000, 1)
@@ -144,22 +156,24 @@ for k in range(rows):
 for rd in radial_distance_values:
     one_el = 0
     two_el = 0
+
+    print('Distance:', rd, 'cm')
  
     for i in range (10):  #10
     # We take the raw pulse of two electrons in a random time distance between them 
     # We take the random distance from a normal distribution with sigma that depends on the radial distance
 
-        raw_pulses, a_dist = core.createTwoPulsesRandom(the_instance, r_a = 0.315, r_c = 30, voltage = 2520, pressure = 3.1, mobility_0 = 7.5*10**(-6), radial_distance = rd)
+        raw_pulses, a_dist, r = core.createTwoPulsesRandom(the_instance, r_a = 0.315, r_c = 30, voltage = 2520, pressure = 3.1, mobility_0 = 7.5*10**(-6), radial_distance = rd)
         plotter.Plotter.plot(
             the_instance,
             raw_pulses,
-            'The pulses of the two electrons (for ' +str(rd) +' cm)'
+            'Time [μs]',
+            'Amplitude'
         )
         plt.xlim(1950, 2100)
 
-        drift_time.append(a_dist)
-
-
+        drift_time.append(int(r[0]))
+        drift_time.append(int(r[1]))
          
         ### CHECK ###
 
@@ -183,22 +197,24 @@ for rd in radial_distance_values:
 
         electronicSignal = core.createElectronicSignal(the_instance, raw_pulses)
 
-        electronicSignalWithNoise = core.createNoiseForElectronicSignal(the_instance, electronicSignal)
+        electronicSignalWithNoise = core.createElectronicSignalWithNoise(the_instance, electronicSignal)
 
         deconv = core.deconvolutedSingalWithNoise(the_instance, electronicSignalWithNoise)
         plotter.Plotter.plot(
             the_instance, 
             deconv,
-            'The raw pulse with noise'
+            'Time [μs]',
+            'Amplitude'
         )
 
 
-    for i in range (10):  #890
+    for i in range (8):  #890
     # We take the raw pulse of two electrons in a random time distance between them 
     # We take the random distance from a normal distribution with sigma that depends on the radial distance
 
-        raw_pulses, a_dist = core.createTwoPulsesRandom(the_instance, r_a = 0.315, r_c = 30, voltage = 2520, pressure = 3.1, mobility_0 = 7.5*10**(-6), radial_distance = rd)
-        drift_time.append(a_dist)
+        raw_pulses, a_dist, r = core.createTwoPulsesRandom(the_instance, r_a = 0.315, r_c = 30, voltage = 2520, pressure = 3.1, mobility_0 = 7.5*10**(-6), radial_distance = rd)
+        drift_time.append(int(r[0]))
+        drift_time.append(int(r[1]))
 
         # We check how many electrons we can see
         if a_dist >= (2000+2):
@@ -220,7 +236,7 @@ for rd in radial_distance_values:
 
         electronicSignal = core.createElectronicSignal(the_instance, raw_pulses)
 
-        electronicSignalWithNoise = core.createNoiseForElectronicSignal(the_instance, electronicSignal)
+        electronicSignalWithNoise = core.createElectronicSignalWithNoise(the_instance, electronicSignal)
 
         deconv = core.deconvolutedSingalWithNoise(the_instance, electronicSignalWithNoise)
     
@@ -228,8 +244,9 @@ for rd in radial_distance_values:
     # We take the raw pulse of two electrons in a random time distance between them 
     # We take the random distance from a normal distribution with sigma that depends on the radial distance
 
-        raw_pulses, a_dist = core.createTwoPulsesRandom(the_instance, r_a = 0.315, r_c = 30, voltage = 2520, pressure = 3.1, mobility_0 = 7.5*10**(-6), radial_distance = rd)
-        drift_time.append(a_dist)
+        raw_pulses, a_dist, r = core.createTwoPulsesRandom(the_instance, r_a = 0.315, r_c = 30, voltage = 2520, pressure = 3.1, mobility_0 = 7.5*10**(-6), radial_distance = rd)
+        drift_time.append(int(r[0]))
+        drift_time.append(int(r[1]))
 
         # We check how many electrons we can see
         if a_dist >= (2000+2):
@@ -255,11 +272,10 @@ for rd in radial_distance_values:
 
         electronicSignal = core.createElectronicSignal(the_instance, raw_pulses)
 
-        electronicSignalWithNoise = core.createNoiseForElectronicSignal(the_instance, electronicSignal)
+        electronicSignalWithNoise = core.createElectronicSignalWithNoise(the_instance, electronicSignal)
 
         deconv = core.deconvolutedSingalWithNoise(the_instance, electronicSignalWithNoise)
 
-    print('Distance:', rd)
     print('Number of one electron:', one_el)
     print('Number of two electrons:', two_el)
 
@@ -276,7 +292,19 @@ for rd in radial_distance_values:
     #show plot to user
     plt.show()
 
+    #print(drift_time)
 
+    plt.figure(plt.gcf().number+1)
+    # best fit of data
+    (mu, sigma) = norm.fit(drift_time)
+
+    # the histogram of the data
+    n, bins, patches = plt.hist(drift_time, 20, density=True, stacked=True, facecolor='green', alpha=0.75)
+
+    # add a 'best fit' line
+    y = norm.pdf( bins, mu, sigma)
+    l = plt.plot(bins, y, 'r--', linewidth=2)
+    plt.show()
 
 # %%
 #We have three electrons that begin from different radial distances
@@ -287,21 +315,24 @@ for rd in radial_distance_values:
     two_el = 0
     three_el = 0
 
+    print('Distance:', rd)
+
     for i in range (10):  #10
     # We take the raw pulse of three electrons in a random time distance between them 
     # We take the random distance from a normal distribution with sigma that depends on the radial distance
 
-        raw_pulses, a_dist, b_dist = core.createThreePulsesRandom(the_instance, r_a = 0.315, r_c = 30, voltage = 2520, pressure = 3.1, mobility_0 = 7.5*10**(-6), radial_distance = rd)
+        raw_pulses, a_dist, b_dist, r = core.createThreePulsesRandom(the_instance, r_a = 0.315, r_c = 30, voltage = 2520, pressure = 3.1, mobility_0 = 7.5*10**(-6), radial_distance = rd)
         plotter.Plotter.plot(
             the_instance,
             raw_pulses,
-            'The pulses of the three electrons (for ' +str(rd) +' cm)'
+            'Time [μs]',
+            'Amplitude'
         )
         plt.xlim(1950, 2100)
 
-        drift_time.append(a_dist)
-        drift_time.append(b_dist)
-        
+        drift_time.append(int(r[0]))
+        drift_time.append(int(r[1]))
+        drift_time.append(int(r[2]))
 
 
         ### CHECK ###
@@ -341,23 +372,25 @@ for rd in radial_distance_values:
 
         electronicSignal = core.createElectronicSignal(the_instance, raw_pulses)
 
-        electronicSignalWithNoise = core.createNoiseForElectronicSignal(the_instance, electronicSignal)
+        electronicSignalWithNoise = core.createElectronicSignalWithNoise(the_instance, electronicSignal)
 
         deconv = core.deconvolutedSingalWithNoise(the_instance, electronicSignalWithNoise)
         plotter.Plotter.plot(
             the_instance, 
             deconv,
-            'The raw pulse with noise'
+            'Time [μs]',
+            'Amplitude'
         )
 
-    for i in range (10):  #890
+    for i in range (8):  #890
     # We take the raw pulse of three electrons in a random time distance between them 
     # We take the random distance from a normal distribution with sigma that depends on the radial distance
 
-        raw_pulses, a_dist, b_dist = core.createThreePulsesRandom(the_instance, r_a = 0.315, r_c = 30, voltage = 2520, pressure = 3.1, mobility_0 = 7.5*10**(-6), radial_distance = rd)
+        raw_pulses, a_dist, b_dist, r = core.createThreePulsesRandom(the_instance, r_a = 0.315, r_c = 30, voltage = 2520, pressure = 3.1, mobility_0 = 7.5*10**(-6), radial_distance = rd)
         
-        drift_time.append(a_dist)
-        drift_time.append(b_dist)
+        drift_time.append(int(r[0]))
+        drift_time.append(int(r[1]))
+        drift_time.append(int(r[2]))
 
         if a_dist == b_dist: 
             if a_dist== 2000:
@@ -393,7 +426,7 @@ for rd in radial_distance_values:
 
         electronicSignal = core.createElectronicSignal(the_instance, raw_pulses)
 
-        electronicSignalWithNoise = core.createNoiseForElectronicSignal(the_instance, electronicSignal)
+        electronicSignalWithNoise = core.createElectronicSignalWithNoise(the_instance, electronicSignal)
 
         deconv = core.deconvolutedSingalWithNoise(the_instance, electronicSignalWithNoise)
 
@@ -401,10 +434,11 @@ for rd in radial_distance_values:
     # We take the raw pulse of three electrons in a random time distance between them 
     # We take the random distance from a normal distribution with sigma that depends on the radial distance
 
-        raw_pulses, a_dist, b_dist = core.createThreePulsesRandom(the_instance, r_a = 0.315, r_c = 30, voltage = 2520, pressure = 3.1, mobility_0 = 7.5*10**(-6), radial_distance = rd)
+        raw_pulses, a_dist, b_dist, r = core.createThreePulsesRandom(the_instance, r_a = 0.315, r_c = 30, voltage = 2520, pressure = 3.1, mobility_0 = 7.5*10**(-6), radial_distance = rd)
         
-        drift_time.append(a_dist)
-        drift_time.append(b_dist)
+        drift_time.append(int(r[0]))
+        drift_time.append(int(r[1]))
+        drift_time.append(int(r[2]))
 
         if a_dist == b_dist: 
             if a_dist== 2000:
@@ -444,11 +478,10 @@ for rd in radial_distance_values:
     
         electronicSignal = core.createElectronicSignal(the_instance, raw_pulses)
 
-        electronicSignalWithNoise = core.createNoiseForElectronicSignal(the_instance, electronicSignal)
+        electronicSignalWithNoise = core.createElectronicSignalWithNoise(the_instance, electronicSignal)
 
         deconv = core.deconvolutedSingalWithNoise(the_instance, electronicSignalWithNoise)
         
-    print('Distance:', rd)
     print('Number of one electron:', one_el)
     print('Number of two electrons:', two_el)
     print('Number of three electrons:', three_el)
@@ -466,28 +499,79 @@ for rd in radial_distance_values:
     #show plot to user
     plt.show()
 
+    plt.figure(plt.gcf().number+1)
+    # best fit of data
+    (mu, sigma) = norm.fit(drift_time)
+
+    # the histogram of the data
+    n, bins, patches = plt.hist(drift_time, 20, density=True, stacked=True, facecolor='green', alpha=0.75)
+
+    # add a 'best fit' line
+    y = norm.pdf( bins, mu, sigma)
+    l = plt.plot(bins, y, 'r--', linewidth=2)
+    plt.show()
+
 #print("final arr:", arr)
 
 df = pd.DataFrame(data = arr)
 df.to_excel('pandas_to_excel.xlsx', sheet_name='signal analysis data test')
+
+# %%
+
+shmeia = np.array([-0.43, 4.26, -4.26, 2.13, -4.69, -0.86, -7.23, 1.28, -8.51, -2.13, -8.09, -2.98, -4.26, -7.23, 0.43, -4.26, 1.70, -5.11, 3.40, 6.81, 2.98])
+std = np.std(shmeia)
+print(std)
     
 
 # %%
-import scipy
-from scipy.stats import norm
+def plotGaussianDistribution(mean, std_dev, graph_color, graph_label):
+    x_min = 0.0
+    x_max = mean * 2
 
- 
-plt.figure(40001)
-# the histogram of the data
-_, bins, _ = plt.hist(drift_time, 20, density=1, alpha=0.5)
-mu, sigma = scipy.stats.norm.fit.pdf(bins, mu, sigma)
-plt.plot(bins, best_fit_line)
-plt.title("Histogram of drift time")
-plt.show()
+    x = np.linspace(x_min, x_max, 1000)
+    y = scipy.stats.norm.pdf(x, mean, std_dev)
 
-print(mu, sigma)
+    plt.plot(x, y, label=graph_label)
+    # plt.fill_between(x, y, color=graph_color, alpha='0.5')
+
+    plt.title('Gaussian Distribution')
+    plt.ylim(0, 0.04)
+    plt.xlabel('x')
+    plt.ylabel('Density')
+    plt.savefig("gaussian_distribution.png")
+    plt.show()
+
+    
+
+
+# Execute only if run as a script 
+mean = 100
+std_dev = 20
+graph_color = "black"
+graph_label = " "
+plotGaussianDistribution(mean, std_dev, graph_color, graph_label) 
 
 # %%
 
+one_el = np.array([1000])
+two_el = np.array([0])
 
+one_el_mean = np.mean(one_el)
+two_el_mean = np.mean(two_el)
 
+one_el_std = np.std(one_el)
+two_el_std = np.std(two_el)
+
+electrons = ['1', '2']
+x_pos =np.arange(len(electrons))
+CTEs = [one_el_mean, two_el_mean]
+error = [one_el_std, two_el_std]
+
+fig, ax = plt.subplots()
+ax.bar(x_pos, CTEs, yerr=error, align='center', alpha = 0.5, ecolor = 'black', capsize = 10)
+ax.set_xsticks(x_pos)
+
+plt.tight_layout()
+plt.show()
+
+# %%

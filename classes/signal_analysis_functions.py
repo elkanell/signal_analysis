@@ -81,8 +81,8 @@ class CoreFuncs(object):
     def createTwoPulsesRandom(instance, r_a, r_c, voltage, pressure, mobility_0, radial_distance, num=2):
         n_el = 2 # number of the electrons
 
-        sigmaF = np.sqrt(InstanceRef.FANO*InstanceRef.GAIN) # sigma avec Fano sigma = sqrt(fano*mean)
-        gains = np.round(np.random.normal(InstanceRef.GAIN, sigmaF, n_el))
+        #sigmaF = np.sqrt(InstanceRef.THETA*InstanceRef.GAIN) # sigma avec Fano sigma = sqrt(fano*mean)
+        gains = np.round(np.random.exponential(InstanceRef.GAIN, n_el))
         
         #for i in range (10):
         s = np.zeros(instance.n)
@@ -97,9 +97,13 @@ class CoreFuncs(object):
         time_of_arrival = 2000
         sigma = ((radial_distance / r_c) ** 3) * 20 # diffusion time
 
-        r = np.random.normal(21.0, sigma, 2) # arrival time
+        mean_diffusion_time = 100
 
-        a = np.abs(r[1] - r[0])
+        r = np.random.normal(mean_diffusion_time, sigma, 2) # arrival time
+
+        r = np.sort([(r[0]), (r[1])])
+
+        a = r[1] - r[0]
         a_dist = int(time_of_arrival + a)
         #print(a_dist)
 
@@ -122,7 +126,7 @@ class CoreFuncs(object):
 
         raw_pulse = np.add(s1, s2)
 
-        return raw_pulse, a_dist
+        return raw_pulse, a_dist, r
         
 
 
@@ -133,8 +137,8 @@ class CoreFuncs(object):
     def createThreePulsesRandom(instance, r_a, r_c, voltage, pressure, mobility_0, radial_distance, num=3):
         n_el = 3 # number of the electrons
 
-        sigmaF = np.sqrt(InstanceRef.FANO*InstanceRef.GAIN) # sigma avec Fano sigma = sqrt(fano*mean)
-        gains = np.round(np.random.normal(InstanceRef.GAIN, sigmaF, n_el))
+        #sigmaF = np.sqrt(InstanceRef.THETA*InstanceRef.GAIN) # sigma avec Fano sigma = sqrt(fano*mean)
+        gains = np.round(np.random.exponential(InstanceRef.GAIN, n_el))
         
         #for i in range (10):
         s = np.zeros(instance.n)
@@ -150,12 +154,16 @@ class CoreFuncs(object):
         time_of_arrival = 2000
         sigma = ((radial_distance / r_c) ** 3) * 20 # diffusion time
 
-        r = np.random.normal(21.0, sigma, 3) # arrival time
+        mean_diffusion_time = 100
 
-        a = np.abs(r[1] - r[0])
+        r = np.random.normal(mean_diffusion_time, sigma, 3) # arrival time
+
+        r = np.sort([(r[0]), (r[1]), (r[2])])
+
+        a = r[1] - r[0]
         a_dist = int(time_of_arrival + a)
-        b = np.abs(r[2] - r[1])
-        b_dist = int(time_of_arrival + b)
+        b = r[2] - r[1]
+        b_dist = int(a_dist + b)
         #print(a_dist)
         #print(b_dist)
 
@@ -191,7 +199,7 @@ class CoreFuncs(object):
           s3])
         raw_pulse = np.add(0, arr.sum(axis=0))
 
-        return raw_pulse, a_dist, b_dist
+        return raw_pulse, a_dist, b_dist, r
         
 
 
@@ -212,13 +220,14 @@ class CoreFuncs(object):
     @staticmethod
     def createElectronicSignalWithNoise(coreInstance, pulse):
         #white noise
-        noiseamp = 2
+        #noiseamp = 2
 
         # add a white noise to the signal
 
-        noise = noiseamp * np.random.randn(coreInstance.n)
+        #noise = noiseamp * np.random.randn(coreInstance.n)
+        noise = np.random.normal(0, 4.3, coreInstance.n)
         signal = pulse + noise
-        return signal
+        return signal, noise
 
     # definition of a function that adds a noise to the raw pulse
     @staticmethod
